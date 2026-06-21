@@ -80,7 +80,7 @@ class KNN:
             key = lambda x:x[1]
         )
 
-        return self.weight_fn(k_nearest, y_train)
+        return self.weight_fn(k_nearest, self.y_train)
         
 
 
