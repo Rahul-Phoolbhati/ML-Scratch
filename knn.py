@@ -1,1 +1,0 @@
-# implementing Knn from scrach
