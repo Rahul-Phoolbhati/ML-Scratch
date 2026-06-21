@@ -3,11 +3,46 @@ import math
 import heapq
 from collections import Counter
 
+
+def _uniform_vote(k_nearest, y_train):
+    labels = [y_train[ind] for ind,_ in k_nearest]
+    prediction = Counter(labels).most_common(1)[0][0]
+    return prediction 
+
+def _distance_vote(k_nearest, y_train):
+    votes = {}
+
+    for ind, dist in k_nearest:
+        weight = 1/(dist+1e-10)  # 1e-10 ? to avoid devision by 0
+        label = y_train[ind]
+        votes[label] = votes.get(label, 0) + weight
+    
+    return max(votes, key=votes.get)
+
+WEIGHT_FUNCS = {
+    "uniform": _uniform_vote,
+    "distance": _distance_vote
+}
+
 class KNN:
 
     def __init__(self, k=3, weights="distance"):
         self.k = k
-        self.weights = weights
+        self.weight_fn = self._get_weight_fn(weights)
+
+    def _get_weight_fn(self, weights):
+        if callable(weights):
+            return weights
+        
+        if isinstance(weights, str):
+            if weights not in WEIGHT_FUNCS:
+                raise ValueError(
+                    f"Unknown weights : {weights}. "
+                    f"Choose from {list(WEIGHT_FUNCS.keys())} or pass a callable."
+                )
+            return WEIGHT_FUNCS[weights]
+        else:
+            raise TypeError("weights must be 'uniform', 'distance' or a callable.")
 
     def fit(self, X, Y):
         if self.k > len(X):
@@ -25,20 +60,6 @@ class KNN:
             total += (a-b)**2
         return math.sqrt(total)
 
-    def _uniform_vote(self, k_nearest):
-        labels = [self.y_train[ind] for ind,_ in k_nearest]
-        prediction = Counter(labels).most_common(1)[0][0]
-        return prediction 
-
-    def _distance_vote(self, k_nearest):
-        votes = {}
-
-        for ind, dist in k_nearest:
-            weight = 1/(dist+1e-10)  # 1e-10 ? to avoid devision by 0
-            label = self.y_train[ind]
-            votes[label] = votes.get(label, 0) + weight
-        
-        return max(votes, key=votes.get)
 
 
     def _ind_distances(self, x):
@@ -59,16 +80,7 @@ class KNN:
             key = lambda x:x[1]
         )
 
-        if self.weights == "uniform":
-            return self._uniform_vote(k_nearest)
-
-        elif self.weights == "distance":
-            return self._distance_vote(k_nearest)
-
-        else:
-            raise ValueError(
-                f"Unknown weights: {self.weights}"
-            )
+        return self.weight_fn(k_nearest, y_train)
         
 
 

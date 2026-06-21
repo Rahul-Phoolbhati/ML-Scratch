@@ -11,6 +11,9 @@ class KNN:
     def fit(self, X, Y):
         if self.k > len(X):
             raise ValueError("Value of k can't be greater than the size of training set")
+        if len(X) != len(Y):
+            raise ValueError("X and y must have same number of samples")
+            
         self.x_train = X
         self.y_train = Y
 
